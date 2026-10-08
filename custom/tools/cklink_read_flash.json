@@ -1,0 +1,28 @@
+{
+    "DebugServerSetting": {
+        "UseDDC": true,
+        "EnableTRST": true,
+        "ICECLk": 5000,
+        "DelayMTCR": 10
+    },
+    "FlashProgramSession": {
+        "CommandType": 1,
+        "TargetConfig": {
+            "AlgorithmFile": "D:/Program Files/CSKY-FlashProgrammer-windows/FlashProgrammer/TXW82X_FLASH_ALGORITHM.elf",
+            "EraseType": 3,
+            "ConnectType": 1,
+            "Timeout": 120,
+            "RestAndRun": false,
+            "ResetType": 0,
+            "RunMode": false
+        },
+        "TargetFile": {
+            "DumpFileType": 1,
+            "DumpBinFileInfo": {
+                "FilePath": "H:/txw_workspace/TXW82x_FPV/archive/cklink_full_read.bin",
+                "StartAddress": 0,
+                "Length": 1245184
+            }
+        }
+    }
+}

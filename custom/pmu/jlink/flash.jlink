@@ -1,0 +1,6 @@
+r
+h
+loadfile build/pmu_ne102.hex
+r
+g
+qc

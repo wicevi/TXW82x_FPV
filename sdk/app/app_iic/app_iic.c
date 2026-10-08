@@ -297,6 +297,12 @@ void iic_run_thread(void *d){
 					gpio_iomap_inout(cur_scl_io, GPIO_IOMAP_IN_SPI2_SCK_IN, GPIO_IOMAP_OUT_SPI2_SCK_OUT);
 					gpio_iomap_inout(cur_sda_io, GPIO_IOMAP_IN_SPI2_IO0_IN, GPIO_IOMAP_OUT_SPI2_IO0_OUT);
 				}
+				/* NE102 fix: SDA/SCL are bidirectional open-drain pads; without
+				 * input-enable the controller cannot read the bus (always 0xFF,
+				 * sensor never ACKs). Same pattern the SD host driver applies
+				 * to its bidirectional DAT0 line. */
+				gpio_ioctl(cur_sda_io, GPIO_CMD_SET_IEEN, 1, 0);
+				gpio_ioctl(cur_scl_io, GPIO_CMD_SET_IEEN, 1, 0);
 				if(cur_id_addr == 0){
 					i2c_ioctl(cur_i2c,IIC_SET_DEVICE_ADDR,cur_table[2]);
 				}

@@ -1,0 +1,10 @@
+{
+  "mcp": {
+    "servers": {
+      "taixin-documentation": {
+        "type": "http",
+        "url": "https://taixin-semi.com/api/mcp"
+      }
+    }
+  }
+}

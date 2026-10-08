@@ -68,6 +68,9 @@ MJPG(1路):  MJPG:  10-30(mjpg节点)*16K = 160K-480K  (不同分辨率以及质
  * VCAM开关,部分io电源域需要打开才有电
  *****************************************************************/
 #define VCAM_EN                         1
+/* NE102: VCAM2 LDO powers the 1V8_CSI rail (sensor IOVDD + camera I2C
+ * pull-ups); the 1080p demo reference board does not need it, NE102 does. */
+#define VCAM2_EN                        1
 
 /*****************************************************************
  * sd使能
@@ -97,8 +100,10 @@ MJPG(1路):  MJPG:  10-30(mjpg节点)*16K = 160K-480K  (不同分辨率以及质
 #define DEV_SENSOR_TP9950               0
  ***************************************************************************************************************************/
 //#define DEV_SENSOR_SC1346               1
-#define DEV_SENSOR_GC1084               1
-#define DEV_SENSOR_GC2053               1
+#define DEV_SENSOR_GC1084               0
+#define DEV_SENSOR_GC2053               0
+/* NE102: GC20C3 1080p 1-lane sensor (I2C_ID_SEL strap low -> 0x62/0x63) */
+#define DEV_SENSOR_GC20C3               1
 
 /***********************************************************
  *默认mjpeg的节点数量,要根据mjpeg启动的分辨率去考虑

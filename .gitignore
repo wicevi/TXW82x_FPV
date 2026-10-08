@@ -25,6 +25,24 @@
 /project/parameter_ui.setcfg
 /project/*.bak
 
+# PMU (N32L403) GCC build outputs
+/custom/pmu/build/
+
+# CDK per-project build outputs (txw82xApp / txw82xCore)
+/project/*/Obj/
+/project/*/Lst/
+/project/*/APP*.bin
+/project/*/txw82xApp*.bin
+/project/*/txw82xCore*.bin
+/project/*/param.bin
+/project/*/*.elf
+/project/*/*.map
+/project/*/*.hex
+/project/*/*.ihex
+/project/*/*.mk
+/project/*/*.modify.bat
+/project/cdkws.mk
+
 # Editor, OS, and diagnostic noise
 *.log
 *.tmp
@@ -33,3 +51,15 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# local build archive
+/archive/
+.cache/
+.cdk/
+
+# transient serial-capture artifacts (regenerated on demand)
+/custom/tools/console_log.txt
+/custom/tools/serial_stop
+
+# CDK core build backup
+/project/*/bakup/

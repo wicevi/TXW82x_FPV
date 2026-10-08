@@ -22,6 +22,7 @@
 #include "lib/net/skmonitor/skmonitor.h"
 #include "syscfg.h"
 #include "demo/user_app.h"
+#include "../../custom/app/app_lowpwr_camera.h"
 #include "lib/multimedia/msi.h"
 #include "lib/heap/av_psram_heap.h"
 #include "lib/heap/av_heap.h"
@@ -395,6 +396,7 @@ __init static void usr_app_init(void)
     /*
        添加用户App代码初始化
     */
+    app_lowpwr_camera_init();
 }
 
 static int32 watchdog_loop(struct os_work *work)
@@ -407,6 +409,7 @@ static int32 watchdog_loop(struct os_work *work)
 int main(void)
 {
     mcu_watchdog_timeout(0); //打开或关闭MCU看门狗
+    app_board_power_init(); // NE102: turn on camera/TF power before demo init
     sys_cpurpc_init();
     sys_heap_info();
     sys_cfg_load();

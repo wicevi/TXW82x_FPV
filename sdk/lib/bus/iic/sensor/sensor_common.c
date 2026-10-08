@@ -499,9 +499,14 @@ static void sensor_power_on(uint32_t csi_dev_id)
         if (rsn != 255) {
             gpio_iomap_output(rsn, GPIO_IOMAP_OUTPUT);
             gpio_set_val(rsn, 1);
-            os_sleep_ms(50);
+            /* NE102 fast-start: sensor rails are stable long before this
+             * point (board LDOs enabled at main()), so the stock 50ms
+             * pre-wait and 20ms reset pulse are cut to timing minimums.
+             * sensorAutoCheck's retry loop absorbs the ~6ms sensor boot
+             * time after reset release (first probe may read 0xff). */
+            os_sleep_ms(2);
             gpio_set_val(rsn, 0);
-            os_sleep_ms(20);
+            os_sleep_ms(2);
             gpio_set_val(rsn, 1);
 
         }
@@ -557,14 +562,23 @@ _Sensor_Adpt_ *sensorAutoCheck(uint8_t csi_dev_id, uint8_t iic_devid)
 
     sensor_power_on(csi_dev_id);
 
-    for (uint8_t i = 0; SensorTable_CSI[i] != NULL; i++) {
-        const _Sensor_Adpt_  *entry = SensorTable_CSI[i];
-        const _Sensor_Ident_ *ident = &entry->sensor_iic;
+    /* NE102 fix: the first probe right after power-up races something in
+     * the early boot window and reads 0xFF even though the sensor is on
+     * the bus (a controller read 1s later returns the id fine). Retry a
+     * few times with a delay before declaring the sensor unknown. */
+    for (uint8_t retry = 0; retry < 100 && !matched_entry; retry++) {
+        if (retry) {
+            os_sleep_ms(5);
+        }
+        for (uint8_t i = 0; SensorTable_CSI[i] != NULL; i++) {
+            const _Sensor_Adpt_  *entry = SensorTable_CSI[i];
+            const _Sensor_Ident_ *ident = &entry->sensor_iic;
 
-        if (check_sensor_id(iic_devid, ident) >= 0) {
-            os_printf("sensor id=0x%x index=%d\n", ident->id, i);
-            matched_entry = (_Sensor_Adpt_ *)entry;
-            break;
+            if (check_sensor_id(iic_devid, ident) >= 0) {
+                os_printf("sensor id=0x%x index=%d (retry %d)\n", ident->id, i, retry);
+                matched_entry = (_Sensor_Adpt_ *)entry;
+                break;
+            }
         }
     }
 

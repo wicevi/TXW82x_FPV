@@ -1,4 +1,8 @@
 #include "demo/app_device.h"
+
+/* NE102 bring-up: TF card not inserted - keep SD init off to stop
+ * the endless card-retry log spam. Set to 1 when testing recording. */
+#define NE102_SD_EN 0
 #include "demo/app_common.h"
 #include "lib/video/dvp/jpeg/jpg.h"
 #include "lib/video/mipi_csi/mipi_csi.h"
@@ -85,7 +89,7 @@ static int32_t app_hardware_init(void)
     uint16_t w = 0, h = 0;
 // 硬件初始化
 // sd卡初始化
-#if FS_EN
+#if FS_EN && NE102_SD_EN
     ret = app_sd_init(STARTUP_OTA, "/sd0/ota.bin");
     APP_RETUNR_RET(ret);
 #endif

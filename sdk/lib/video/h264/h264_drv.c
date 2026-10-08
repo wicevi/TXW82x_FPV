@@ -1896,7 +1896,7 @@ void h264_buf1_done_isr(uint32 irq_flags, uint32 irq_data, uint32 param){
 void h264_frame_fast_isr(uint32 irq_flags, uint32 irq_data, uint32 param){
 	//struct h264_device *p_h264 = (struct h264_device *)irq_data;
 	//_os_printf("********************************%s  %d\r\n",__func__,__LINE__);
-	_os_printf(KERN_INFO"(F)");
+	//_os_printf(KERN_INFO"(F)"); /* NE102 perf: ISR-context UART print throttles the encode path */
 }
 
 
@@ -1915,7 +1915,7 @@ void h264_pixel_fast_isr(uint32 irq_flags, uint32 irq_data, uint32 param){
 
 void h264_soft_slow_isr(uint32 irq_flags, uint32 irq_data, uint32 param){
 	//struct h264_device *p_h264 = (struct h264_device *)irq_data;
-	_os_printf(KERN_INFO"******************************** %s  %d\r\n",__func__,__LINE__);
+	//_os_printf(KERN_INFO"******************************** %s  %d\r\n",__func__,__LINE__); /* NE102 perf: ISR print */
 }
 
 

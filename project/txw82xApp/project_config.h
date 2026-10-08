@@ -2,7 +2,7 @@
 #define __SDK_PROJECT_CONFIG_H__
 
 
-#define CUSTOMER_ID 5
+#define CUSTOMER_ID 8
 
 /*
  * CUSTOMER_ID :

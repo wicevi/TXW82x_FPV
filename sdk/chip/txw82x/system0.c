@@ -151,7 +151,7 @@ __SYS_INIT void sys_start_cpu1(uint32_t run_addr)
     os_printf(KERN_NOTICE"kick start cpu1 at %p!\n", run_addr);
 
     CoreSetting->soft_int_pending = 0;
-    CoreSetting->print_level = 0;
+    CoreSetting->print_level = 6;
     CoreSetting->disable_print = 0;
     CoreSetting->dcache_maint_en = CONFI_CORE_DCACHE_MAINT_EN;
     CoreSetting->dbg_uart_dev = CONFI_CORE_UARTDEV;

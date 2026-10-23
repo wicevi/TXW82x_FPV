@@ -333,6 +333,15 @@ extern void hw_memcpy(void *dest, const void *src, unsigned int size);
 #define LWIP_SOCKET                 1
 #endif
 
+/* NE102: keep lwip socket fd numbers out of the newlib stdio range.
+ * Without the offset the first socket lands on fd 1 (stdout) when no
+ * file has been opened yet - MQTT packets then go to the UART and reads
+ * fail instantly (board finding 2026-10-13, kawaii "connect ok" but
+ * every publish rc=-1 in <30ms). */
+#ifndef LWIP_SOCKET_OFFSET
+#define LWIP_SOCKET_OFFSET          3
+#endif
+
 #ifndef SO_REUSE
 #define SO_REUSE                    1
 #endif

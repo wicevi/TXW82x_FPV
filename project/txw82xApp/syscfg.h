@@ -93,6 +93,10 @@ struct sys_config {
 
     uint8 coze_conversation_id[64];
     uint8 coze_pat_key[128];
+
+    /* NE102 debug: boot-mode override set by AT+NEMODE, survives reset.
+     * 0xFF = none (follow hardware wake reason), 0 = config, 1 = capture. */
+    uint8 ne102_force_mode;
 };
 
 extern struct sys_config sys_cfgs;

@@ -111,8 +111,13 @@ uint8_t           *vpp_data1_psram_buf     = NULL;
 uint8_t           *vpp_data2_psram_buf     = NULL;
 volatile uint8_t  *psram_ptr               = NULL;
 volatile uint8_t  *psram_user_ptr          = NULL;
-volatile uint32_t  photo_complex           = 0;
-static uint8      *yuvbuf                  = NULL;
+volatile uint32    photo_complex           = 0;
+/* NE102: was `static` - scale_dev_v3.c's scale_soft_from_psram_to_enc
+ * declares `extern uint8 *yuvbuf` and stages its soft-feed lines
+ * through this exact VPP line buffer (safe: the caller closes the VPP
+ * first). The static made that reference unresolvable the moment the
+ * offline-scale path is linked in. */
+uint8             *yuvbuf                  = NULL;
 uint8             *vpp_encode_ipf          = NULL;
 struct video_cfg_t video_msg;
 func_done_fn       vpp_deal_dev_func_table[VPP_FUNC_DONE_NUM];
@@ -1693,6 +1698,20 @@ bool vpp_cfg_release()
         vpp_encode_ipf = NULL;
     }
 
+    /* NE102 fix (2026-10-16): vpp_cfg() allocates mdet_result_sensor1 and
+     * mdet_oldframe_sensor1_buf (DET_EN, single camera) but the release
+     * path never freed them - 2352B leaked every capture cycle (measured
+     * by the mqttka heap telemetry, board finding). */
+    if (mdet_result_sensor1)
+    {
+        VPP_FREE(mdet_result_sensor1);
+        mdet_result_sensor1 = NULL;
+    }
+    if (mdet_oldframe_sensor1_buf)
+    {
+        VPP_FREE(mdet_oldframe_sensor1_buf);
+        mdet_oldframe_sensor1_buf = NULL;
+    }
     if (motion_detect_buf)
     {
         VPP_FREE(motion_detect_buf);

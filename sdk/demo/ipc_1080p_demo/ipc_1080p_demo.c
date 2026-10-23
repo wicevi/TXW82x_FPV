@@ -1,7 +1,8 @@
 #include "demo/app_device.h"
 
-/* NE102 bring-up: TF card not inserted - keep SD init off to stop
- * the endless card-retry log spam. Set to 1 when testing recording. */
+/* NE102 keepalive bench: no-card design (photos go through PSRAM
+ * straight to MQTT) - SD init stays off. NOTE: app_sd_init() failure
+ * aborts the rest of the hardware init (camera included). */
 #define NE102_SD_EN 0
 #include "demo/app_common.h"
 #include "lib/video/dvp/jpeg/jpg.h"

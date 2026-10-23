@@ -319,7 +319,7 @@ void av_heap_print()
 static int32 sys_main_loop(struct os_work *work)
 {
     mcu_watchdog_feed();
-    sys_dbginfo_print();
+    //sys_dbginfo_print();
     //av_heap_print();
 
     /*run again after 1000 ms.*/
@@ -396,7 +396,9 @@ __init static void usr_app_init(void)
     /*
        添加用户App代码初始化
     */
-    app_lowpwr_camera_init();
+    app_lowpwr_camera_init();   /* keepalive bench (CUSTOMER_ID=10) */
+    /* other CUSTOMER_IDs: the stock demo app init already ran inside
+     * sys_app_init() (sdk/demo/ipc_1080p_demo/ipc_1080p_demo.c) */
 }
 
 static int32 watchdog_loop(struct os_work *work)
@@ -409,7 +411,7 @@ static int32 watchdog_loop(struct os_work *work)
 int main(void)
 {
     mcu_watchdog_timeout(0); //打开或关闭MCU看门狗
-    app_board_power_init(); // NE102: turn on camera/TF power before demo init
+    app_board_power_init(); // board power: camera/TF rails + LED (always)
     sys_cpurpc_init();
     sys_heap_info();
     sys_cfg_load();

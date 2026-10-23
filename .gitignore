@@ -63,3 +63,12 @@ Desktop.ini
 
 # CDK core build backup
 /project/*/bakup/
+
+# NE102 session artifacts
+custom/tools/cmd_log.txt
+.zcode/plans/
+
+# bench test artifacts (received photos, run logs)
+/custom/tools/wc_recv/
+/custom/tools/*.log
+/custom/tools/serial_stop

@@ -47,10 +47,16 @@
 #define DBG_RX_PIN      GPIO_PIN_10  /* PA10 Debug_RX */
 
 /* ---- Command UART to the TXW828 SoC (PB6 = PMU_TX / PB7 = PMU_RX, pins 29/30) ----
+ * Kept high-Z by txw_shared_pins_highz(); the lines idle high through the
+ * on-board R21/R22 pull-ups while the UART is not enabled.
  * TODO: the UART peripheral and AF number for PB6/PB7 must be confirmed
  * against the datasheet pin-mux table before implementation
  * (N32L40x AF mapping differs from STM32: USART1 PA9/PA10 is AF4).
  */
+#define PIN_PMU_UART_TX_PORT   GPIOB   /* pin29 PMU_TX -> TXW828 PB13 (R21 pull-up) */
+#define PIN_PMU_UART_TX        GPIO_PIN_6
+#define PIN_PMU_UART_RX_PORT   GPIOB   /* pin30 PMU_RX <- TXW828 PB12 (R22 pull-up) */
+#define PIN_PMU_UART_RX        GPIO_PIN_7
 
 void pmu_log_init(void);
 void pmu_log(const char *fmt, ...);

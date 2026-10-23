@@ -2,6 +2,7 @@
 #include "basic_include.h"
 #include "lib/atcmd/libatcmd.h"
 #include "lib/common/atcmd.h"
+#include "lib/umac/ieee80211.h"
 #include "syscfg.h"
 
 // extern int32 app_atcmd_check_heap(const char *cmd, char *argv[], uint32 argc);
@@ -11,6 +12,7 @@ extern int32 cpu1_atcmd_recv(char *data, uint32 len);
 int32 sys_atcmd_uf_test(const char *cmd, char *argv[], uint32 argc);
 int32 txmplayer_test_atcmd(const char *cmd, char *argv[], uint32 argc);
 int32 atcmd_record_audio(const char *cmd, char *argv[], uint32 argc);
+
 
 int32 sys_empty_atcmd(const char *cmd, char *argv[], uint32 argc)
 {

@@ -55,6 +55,7 @@ struct sys_config sys_cfgs = {
     .dhcpc_en               = DHCPC_EN,
     .mipi_csi0_hs_zero_cnt  = 0,
     .mipi_csi1_hs_zero_cnt  = 0,
+    .ne102_force_mode       = 0xFF, /* AT+NEMODE override: none */
 };
 
 extern void sys_dhcpd_start(void);

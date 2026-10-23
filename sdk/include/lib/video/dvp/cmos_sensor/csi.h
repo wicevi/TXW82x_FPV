@@ -308,6 +308,7 @@ void get_single_dvp(uint16_t *w,uint16_t *h);
 
 extern const _Sensor_ISP_Init default_isp_param_init[ISP_SUPPORT_SENSOR_MAX_NUM];
 extern const _Sensor_ISP_Init gc1084_isp_param_init[ISP_SUPPORT_SENSOR_MAX_NUM];
+extern const _Sensor_ISP_Init gc20c3_isp_param_init[ISP_SUPPORT_SENSOR_MAX_NUM];
 
 
 _Sensor_Adpt_ *sensorAutoCheck(uint8_t csi_dev_id, uint8_t iic_devid);

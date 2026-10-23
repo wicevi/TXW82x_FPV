@@ -138,23 +138,23 @@ extern struct fal_flash_dev txw_nor_flash;
 /* ====================== Partition Configuration ========================== */
 
 /*
- * 分区大小配置（按需修改）
- * 注意：大小必须是 Flash block size (4KB = 0x1000) 的整数倍，且大于2片用于备份
+ * NE102 partition sizes (fixed-offset layout, 2026-10-10)
+ * KVDB sits at a FIXED offset 0x7F0000 (32KB), just below the tail
+ * parameter sectors (recorder 0x7FA000 / bluetooth 0x7FC000 / syscfg
+ * 0x7FE000) and clear of the OTA slot B (0x400000+, libota addr1).
+ * TSDB is not used by the NE102 product (FDB_USING_TSDB off in fdb_cfg.h)
+ * and was removed from the table - the old "computed from flash tail"
+ * placement collided with those parameter sectors.
  */
-#define FDB_KVDB_PART_SIZE              (8 * 1024)        
-#define FDB_TSDB_PART_SIZE              (8 * 1024)        
-/*
- * 分区偏移量占位值 — 运行时由 fal_partition_table_update() 覆盖
- * 实际布局：KVDB 在 Flash 末尾，TSDB 紧邻其前
- */
-#define FDB_KVDB_PART_OFFSET            (FLASH_TOTAL_SIZE - FDB_KVDB_PART_SIZE)
+#define FDB_KVDB_PART_SIZE              (32 * 1024)
+#define FDB_KVDB_PART_OFFSET            (0x7F0000)
+#define FDB_TSDB_PART_SIZE              (8 * 1024)
 #define FDB_TSDB_PART_OFFSET            (FDB_KVDB_PART_OFFSET - FDB_TSDB_PART_SIZE)
 
 /* 分区表配置 */
 #ifdef FAL_PART_HAS_TABLE_CFG
 #define FAL_PART_TABLE                                                               \
 {                                                                                    \
-    {FAL_PART_MAGIC_WORD, "fdb_tsdb1", NOR_FLASH_DEV_NAME, FDB_TSDB_PART_OFFSET, FDB_TSDB_PART_SIZE, 0}, \
     {FAL_PART_MAGIC_WORD, "fdb_kvdb1", NOR_FLASH_DEV_NAME, FDB_KVDB_PART_OFFSET, FDB_KVDB_PART_SIZE, 0}, \
 }
 

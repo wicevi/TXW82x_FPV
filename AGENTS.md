@@ -2,6 +2,12 @@
 
 - Do not add a `Co-authored-by: Codex <noreply@openai.com>` trailer to commits in this repository unless the user explicitly requests it.
 
+## 提交纪律（对所有 agent 强制，2026-10-10 用户裁定）
+
+- **未经用户验收确认，禁止 `git commit`**：一次工作（哪怕跨多个功能点/文档）只在工作区+暂存区累积，等用户明确验收后再提交；一次验收对应一个提交，或按用户指示拆分。
+- 禁止"每改一处就提交一次"——避免提交数量膨胀；上板验证过程中的中间态一律留在工作区。
+- 若发现未验收内容已被提交：`git reset --soft <上一个已验收提交>` 撤回（保留全部改动），不要用 `--hard`。
+
 ## Project context（自研低功耗相机）
 
 本仓库是泰芯官方 TXW82x FPV SDK（分支 `v2.7.1.7`）+ 自研低功耗相机产品。进行任何固件/业务开发前，先加载项目 skill `.zcode/skills/txw82x-dev/SKILL.md`（或由 `txw82x-dev` skill 自动触发），其中包含构建命令、配置体系、低功耗框架和排查路由。

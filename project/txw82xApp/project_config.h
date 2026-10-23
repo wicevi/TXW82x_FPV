@@ -2,12 +2,12 @@
 #define __SDK_PROJECT_CONFIG_H__
 
 
-#define CUSTOMER_ID 8
+#define CUSTOMER_ID 10
 
 /*
  * CUSTOMER_ID :
  *
- * 1 82xApp_AI_VOICE_Demo 
+ * 1 82xApp_AI_VOICE_Demo
  * 2 82xApp_AI_VISION_Demo
  * 3 82xApp_AI_Alarm_Clock_Demo
  * 4 82xApp_ISP_tunning_Demo
@@ -16,6 +16,8 @@
  * 7 82xApp_720P_Sleep_Demo
  * 8 82xApp_1080P_Demo
  * 9 82xApp_Battery_Camera_1080P_Demo
+ * 10 NE102_Product
+ * 11 Power_Test_Demo
 */
 
 #if (CUSTOMER_ID == 1)
@@ -47,6 +49,14 @@
 #elif (CUSTOMER_ID == 9)
 #include "battery_camera_1080p_config.h"
 
+#elif (CUSTOMER_ID == 10)
+/* NE102 product: config header lives in custom/app (cdkproj IncludePath
+ * adds $(ProjectPath)/../../custom/app). Content mirrors the verified
+ * ipc_1080p bring-up baseline except the NE102_PRODUCT scheme switch. */
+#include "ne102_config.h"
+
+#elif (CUSTOMER_ID == 11)
+#include "power_test_config.h"
 
 #endif
 

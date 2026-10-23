@@ -87,6 +87,11 @@ __init static void sys_wifi_parameter_init(void)
 
 #ifdef CONFIG_SLEEP
     void *bgn_dsleep_init(void *ops, uint32 flags);
+    /* NE102: MUST stay on the INTERNAL RC (flags=0). The board's Y2
+     * 32.768kHz crystal sits on RTC_XI/XO = PA7/PA10+PA6/PA9, which are
+     * the CKLink TXLink pins - enabling the external crystal (BIT(0))
+     * takes the pins over and the NEXT flashing session fails (board
+     * rule from the IO doc; user confirmation 2026-10-13). */
     bgn_dsleep_init(ops, 0);
 #endif
 }

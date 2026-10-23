@@ -20,8 +20,10 @@
 /* #define FDB_KV_AUTO_UPDATE */
 #endif
 
-/* using TSDB (Time series database) feature */
-#define FDB_USING_TSDB
+/* using TSDB (Time series database) feature
+ * NE102: disabled 2026-10-10 - product uses KVDB only; the tsdb partition
+ * entry was removed from the fixed-offset FAL table (fal_cfg.h). */
+/* #define FDB_USING_TSDB */
 
 /* Use fixed-size blobs in TSDB to save flash overhead (8 bytes per entry).
  * Define this to the fixed blob size in bytes when all TSL entries are the same size.

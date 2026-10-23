@@ -143,7 +143,8 @@ static void txw_shared_pins_highz(void)
     gpio.GPIO_Mode = GPIO_Mode_Input;
     gpio.GPIO_Pull = GPIO_No_Pull;
 
-    gpio.Pin = PIN_PMU_RST_SYS | PIN_PMU_Module_EN | PIN_PMU_PWM;
+    gpio.Pin = PIN_PMU_RST_SYS | PIN_PMU_Module_EN | PIN_PMU_PWM |
+               PIN_PMU_UART_TX | PIN_PMU_UART_RX;
     GPIO_InitPeripheral(GPIOB, &gpio);
     gpio.Pin = PIN_PMU_IR_EN | PIN_PMU_PIR_CFG | PIN_PMU_IRCUT;
     GPIO_InitPeripheral(GPIOA, &gpio);

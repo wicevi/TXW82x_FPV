@@ -235,11 +235,12 @@ int fal_partition_table_update(struct fal_partition *table, size_t len)
                        flash->blk_size);
             return -1;
         }
-        if (FDB_TSDB_PART_SIZE % flash->blk_size != 0) {
-            FAL_PRINTF("[Error/FAL] %s: TSDB size(0x%x) not aligned "
-                       "to blk_size(0x%x)\n",
-                       __FUNCTION__, FDB_TSDB_PART_SIZE,
-                       flash->blk_size);
+        if (FDB_KVDB_PART_OFFSET % flash->blk_size != 0
+            || FDB_KVDB_PART_OFFSET + FDB_KVDB_PART_SIZE > flash->len) {
+            FAL_PRINTF("[Error/FAL] %s: KVDB fixed region bad "
+                       "(0x%x+0x%x vs flash 0x%x)\n",
+                       __FUNCTION__, FDB_KVDB_PART_OFFSET,
+                       FDB_KVDB_PART_SIZE, flash->len);
             return -1;
         }
 
@@ -251,26 +252,22 @@ int fal_partition_table_update(struct fal_partition *table, size_t len)
         }
     }
 
+    /* NE102 fixed-offset layout (2026-10-10): the previous "computed from
+     * flash tail" placement collided with the syscfg/bluetooth/recorder
+     * parameter sectors (last 24KB, device.c syscfg_info_get). KVDB now
+     * lives at a fixed offset just below them; TSDB is not used (see
+     * fdb_cfg.h). Partition map: custom/doc/NE102 实现设计.md §4. */
     for (i = 0; i < len; i++) {
         if (!strcmp(table[i].name, "fdb_kvdb1")) {
-            table[i].offset = flash->len - FDB_KVDB_PART_SIZE;
+            table[i].offset = FDB_KVDB_PART_OFFSET;
             table[i].len    = FDB_KVDB_PART_SIZE;
-            updated++;
-        } else if (!strcmp(table[i].name, "fdb_tsdb1")) {
-            table[i].offset = flash->len
-                              - FDB_KVDB_PART_SIZE
-                              - FDB_TSDB_PART_SIZE;
-            table[i].len    = FDB_TSDB_PART_SIZE;
             updated++;
         }
     }
 
     if (updated > 0) {
-        FAL_PRINTF("[I/FAL] Partitions updated: flash=0x%x, "
-                   "kvdb@0x%x, tsdb@0x%x\n",
-                   flash->len,
-                   flash->len - FDB_KVDB_PART_SIZE,
-                   flash->len - FDB_KVDB_PART_SIZE - FDB_TSDB_PART_SIZE);
+        FAL_PRINTF("[I/FAL] Partitions updated: flash=0x%x, kvdb@0x%x(+0x%x)\n",
+                   flash->len, FDB_KVDB_PART_OFFSET, FDB_KVDB_PART_SIZE);
     }
 
     return updated;

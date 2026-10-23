@@ -86,7 +86,11 @@ void sys_dhcpd_start()
 {
     struct dhcpd_param param;
 
-    if (sys_cfgs.dhcpd_en && sys_cfgs.wifi_mode == WIFI_MODE_AP) {
+    /* NE102: also start for APSTA - the config mode switches to AP+STA
+     * at runtime and restarts the ifaces, which invalidates a DHCPD
+     * bound before the switch (restarted by the caller in that case). */
+    if (sys_cfgs.dhcpd_en && (sys_cfgs.wifi_mode == WIFI_MODE_AP ||
+                              sys_cfgs.wifi_mode == WIFI_MODE_APSTA)) {
         os_memset(&param, 0, sizeof(param));
         param.start_ip   = sys_cfgs.dhcpd_startip;
         param.end_ip     = sys_cfgs.dhcpd_endip;

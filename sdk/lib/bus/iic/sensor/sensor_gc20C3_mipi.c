@@ -501,7 +501,7 @@ SENSOR_OP_SECTION const _Sensor_Adpt_ gc20C3_cmd =
         .adjust_func  = (isp_ae_func     )GC20C3_ae_adjust,
         .img_opt      = (sensor_img_opt  )gc20C3_img_opt,
         .fps_opt      = (sensor_fps_opt  )gc20C3_fps_opt,
-        // .isp_iq_param   = (_Sensor_ISP_Init*)&20c3_isp_param_init,
+        .isp_iq_param   = (_Sensor_ISP_Init*)&gc20c3_isp_param_init,
     },
 };
 

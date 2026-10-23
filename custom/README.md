@@ -1,69 +1,43 @@
 # custom/ — 自研业务目录
 
-本目录承载低功耗相机产品的全部自研代码与资料。SDK 官方内容（`sdk/`、`project/`、`libs/` 等）尽量不改；本目录即"我们的产品"。开发规则总纲见 `.zcode/skills/txw82x-dev/SKILL.md`。
+本目录承载 **MQTT 远程保活休眠测试固件**（本仓库唯一构建目标）的全部自研代码与板级适配。SDK 官方内容尽量不改（现存例外见下）。开发规则总纲见 `.zcode/skills/txw82x-dev/SKILL.md`。
 
 ## 目录结构
 
-| 目录 | 用途 | 约定 |
-|------|------|------|
-| `app/` | 产品应用层（程序入口） | 应用入口与编排：`app_lowpwr_camera_init()` 由官方 `usr_app_init()` 调用，在此编排各组件初始化与低功耗注册；文件按 SDK 风格 `app_*.c` 命名 |
-| `pmu/` | PMU 独立固件工程 | NE102 电源协处理器 N32L403KBQ7 的独立 GCC 工程（自带 Makefile/库/链接脚本，**不走 CDK 构建**，与 TXW82x 固件分开烧录）；见 `pmu/README.md` |
-| `component/` | 业务功能组件 | 每个组件一个子目录（可多对 `.c/.h`），对外入口收敛为一个 `<组件>_init()`；目录内维护 `README.md` |
-| `lib/` | 可复用纯软件库 | 协议解析、算法、数据结构等**不直接操作硬件**的代码，供 component/driver 调用 |
-| `driver/` | 板级/外设驱动 | NE102 特有、SDK 未提供的外设驱动（电源时序、PIR、LED、按键、传感器等），每个器件一个子目录 |
-| `cfg/` | 板级配置备份 | 命名 `NE102_V<版本>_<yyyymmdd>.cfg`；生效配置仍需复制到 `project/txw82xApp/config.cfg` |
-| `doc/` | 文档资料 | 参考资料（索引见 skill §6）+ `PROJECT_STATUS.md` 项目进展日志 |
-| `tools/` | 脚本工具 | 构建/分析/烧录辅助脚本，注明运行方式与依赖 |
+| 目录 | 用途 |
+|------|------|
+| `app/` | 板级上电（状态 LED + 相机/TF 电源开关）+ 保活入口：`app_lowpwr_camera_init()` → `ne102_mqttka_init()`；`ne102_config.h`（CUSTOMER_ID=10 方案配置，`NE102_MQTTKA=1`） |
+| `app/app_power_test/` | 功耗/休眠档位测试示例（CUSTOMER_ID=11/POWER_TEST_DEMO，当前工作树构建目标）：LED 存活 + `AT+PWRS` 各档休眠 + `AT+PWRDT` DTIM 回调计时唤醒 + `AT+PWRHK` 回调探针（见其 README，含 system_sleep 异步返回教训） |
+| `component/mqttka/` | **核心**：保活休眠循环、事件协议、远程抓拍、质量档位、AT+KA*（见其 README） |
+| `component/capture/` | 相机轨（sensor→MIPI→ISP→VPP→JPEG msi、跳帧、PSRAM stash、循环上下电；`stash_only` 位供断电后落盘路径） |
+| `component/wake_capture/` | **唤醒抓拍周期测试**（功耗测试固件扩展，AT+PWCAP/PWCURL）：睡→唤醒抓拍→PSRAM 暂存→相机下电→SD 落盘/HTTP 上传→再睡→空闲醒 |
+| `component/netctl/` | STA 凭据判定与网络轨标记（保活构建走 boot 原生 STA） |
+| `component/led/` | 状态 LED（PC0）：清醒 1Hz / 唤醒窗口快闪 / 休眠灭 / 故障慢闪 |
+| `component/fae_demo/` | FAE 唤醒原因/生命周期复现（AT+FAE，独立接线 `fae_demo_init()`）：入眠前读取实证 + jiffies 跨停泊失效等 SDK 结论（见其 README 与 FAE 问题包修订段） |
+| `pmu/` | PMU 协处理器（N32L403KBQ7）独立 GCC 工程，与 TXW 固件分开构建烧录（不走本仓 CDK 链） |
+| `cfg/` | 板级配置备份（`NE102_V*.cfg`，生效需复制到 `project/txw82xApp/config.cfg`） |
+| `doc/` | 文档：保活操作卡、FAE 问题包、`PROJECT_STATUS.md`（进展日志）、板级资料（系统IO/原理图/器件手册） |
+| `tools/` | 烧录（burn.bat + CKLink；连不上先串口 `AT+RST`）、串口（serial_cmd.py）、MQTT 工具（console/bench/收图）、HTTP 接收端（http_recv.py）、自动验证（wc_test1.py 全套 + wc_rtcc.py RTCC 单腿） |
 
-**注释语言**：代码注释一律使用英文（含 Makefile/链接脚本/下载脚本）；中文仅用于本文档、`custom/doc/` 及各组件 `README.md`。
+## 板级适配清单（保留勿删）
 
-**编译须知**：`custom/` 下新增 `.c` 必须注册进 `project/txw82xApp/txw82xApp.cdkproj` 的 `FLASH` 配置（XML 中 `<File Name="相对路径"/>`，路径相对 `project/txw82xApp/`，如 `../../custom/component/xxx/xxx.c`），否则不参与构建。新增头文件搜索路径同样在 cdkproj 的 IncludePath 中配置。
+- `project/txw82xApp/pin_param.h`：板级引脚 ABI（CAM_EN/TF_PWR_EN 等）
+- `project/txw82xApp/config.cfg`：板级生效配置——**TF 卡 SDIO 单线**（仅 DAT0：CLK=PB9/CMD=PB8/DAT0=PB10）+ 相机/TF 电源开关引脚
+- `project/txw82xApp/makecode.ini`：XIP 四线 60MHz 启动配置
+- `custom/cfg/NE102_V1.0_*.cfg`：板级参数备份
+- `sdk/lib/video/isp/param/isp_param_gc20c3.c`：GC20C3 sensor IQ 表
+- `custom/app/app_lowpwr_camera.c`：相机电源时序（AVDD 先、DVDD 后，硬件要求）
+- `sdk/lib/video/vpp/vpp_dev.c`：mdet 缓冲泄漏修复 + `yuvbuf` 去 static（scale 链接依赖）
 
-**初始化挂接**：产品应用入口是 `custom/app/app_lowpwr_camera.c` 的 `app_lowpwr_camera_init()`，由 `project/txw82xApp/main.c` 官方预留的 `usr_app_init()` 钩子调用；`app_lowpwr_camera_init()` 再按依赖顺序编排 `custom/component/` 各组件的 init。init 必须快速返回，耗时逻辑放独立 task/workqueue。
+**注释语言**：代码注释一律英文；中文仅用于文档。**编译须知**：`custom/` 下新增 `.c` 必须注册进 `project/txw82xApp/txw82xApp.cdkproj` 的 FLASH 配置。
 
-## 组件索引（agent 维护：增删组件或状态变化时更新此表）
+## 构建与烧录
 
-| 组件 | 路径 | 职责 | 状态 | 文档 |
-|------|------|------|------|------|
-| app_lowpwr_camera | `app/` | 低功耗相机产品应用入口（编排层）：`app_lowpwr_camera_init()` 由 `usr_app_init()` 调用，编排各组件初始化与低功耗注册 | 开发中 | [README.md](app/README.md) |
-| pmu（独立工程） | `pmu/` | NE102 电源协处理器 N32L403KBQ7 固件（GCC/Makefile + J-Link，非 CDK） | 可用（骨架） | [README.md](pmu/README.md) |
-| burn.bat 等工具 | `tools/` | 自主烧录（CDK 配置直调）/ 烧录+校验 / 全片读回 / GDB-RSP 调试客户端 | 可用 | [README.md](tools/README.md) |
-
-状态取值：`规划中 / 开发中 / 可用 / 阻塞 / 废弃`。
+`./build.sh txw`（Core→App，交付物 `project/txw82xApp/APP.bin`）→ `custom/tools/burn.bat`（CKLink；设备停泊中会失联，先发 MQTT `wake` 唤醒再烧）。
 
 ## 文档维护规则（对所有 agent 强制）
 
-每次完成开发任务后必须同步更新文档，让下一个 agent 不读代码就能了解项目进展与组件状态：
-
-1. **组件 README**：本次涉及的应用/组件/驱动/库目录（如 `custom/app/`、`custom/component/<组件>/`、`custom/driver/<器件>/`、`custom/lib/<库>/`）维护 `README.md`，不存在则按下方模板创建，存在则更新"当前状态/已知问题/变更记录"。
-2. **进展日志**：在 `custom/doc/PROJECT_STATUS.md` 表格**顶部**追加一行本次记录（日期倒序）。
-3. **组件索引**：新增/删除组件或状态变化时，更新上方组件索引表。
-4. 只记录事实与结论（做了什么、为什么、当前状态），不复制 SDK 文档内容；文档更新与代码改动放进同一次提交。
-
-### 组件 README.md 模板
-
-```markdown
-# <组件名>
-
-## 用途
-一句话说明组件做什么、给谁用。
-
-## 入口
-- 初始化函数：`xxx_init()`（由 `usr_app_init()` / 上层组件调用）
-- 关键文件：`xxx.c`（核心逻辑）、`xxx_hw.c`（硬件访问）…
-
-## 依赖
-硬件引脚/外设、SDK 组件、其他 custom 组件。
-
-## 当前状态
-<可用 / 开发中 / 阻塞 + 原因>
-已验证：…；未验证：…
-
-## 已知问题
-- …
-
-## 变更记录
-| 日期 | 摘要 |
-|------|------|
-| 2026-xx-xx | 初始创建 |
-```
+1. **组件 README**：涉及的组件目录维护 `README.md`（用途/入口/依赖/当前状态/已知问题/变更记录）。
+2. **进展日志**：在 `custom/doc/PROJECT_STATUS.md` 表格顶部追加一行。
+3. **组件索引**：增删组件或状态变化时更新本文件目录结构表。
+4. 只记录事实与结论；文档更新与代码改动放进同一次提交。

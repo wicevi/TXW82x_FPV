@@ -70,6 +70,9 @@
 #include <osal/sleep.h>
 #include <osal/semaphore.h>
 #include <hal/gpio.h>
+#include <lib/fs/fatfs/osal_file.h>
+#include <devid.h>
+#include <dev.h>
 #include <pin_param.h>
 #include <lib/atcmd/libatcmd.h>
 #include <lib/umac/ieee80211.h>
@@ -1127,6 +1130,107 @@ static int32_t pt_atcmd_wkdet(const char *cmd, char *argv[], uint32_t argc)
     return 0;
 }
 
+/* AT+PWDUMPISP - serialize the runtime-converted DEFAULT ISP table
+ * (available after one capture cycle) into the flash-param file format
+ * and save it to 0:/isp_ref.bin: a guaranteed-loadable reference for
+ * the imaging team. Format is the exact inverse of isp_param_load:
+ * [u16 ps_lo][u16 ps_hi=0][u16 idx=1] + info(2956) + rgb_gamma(256)
+ * + lsc(2448) + 256B zero pad = 5922B, ps=5918 (>= 5916 passes the
+ * size check; the pad covers the (gamma<<1) slack the walk never
+ * reads - board analysis 2026-10-30). */
+static int32_t pt_atcmd_dumpisp(const char *cmd, char *argv[], uint32_t argc)
+{
+    extern void *isp_get_sensor_init(void);
+    extern void fatfs_sd0_init(void);
+    extern void sys_mount_device(uint16 dev_id, uint16 dev_type, uint8 umount);
+    extern void sdhost_deinit_for_sleep(void);
+    const uint32_t info_sz = 2956, gamma_sz = 256, lsc_sz = 153 * 4 * 4;
+    const uint32_t total = 6 + info_sz + gamma_sz + lsc_sz + 256;
+    /* offsets inside hgisp_sensor_info: info_src(4) + head(28) +
+     * basic(60) then hgisp_param_info; rgb_gamma/lsc_tbl are the last
+     * two pointer fields of hgisp_param_info */
+    const uint32_t param_info_off = 4 + 28 + 60;
+    const uint32_t ptr_off = 2864 - 2 * 4;  /* last 8B of param_info */
+    uint8_t *buf;
+    uint32_t gamma_addr, lsc_addr, ps = 5918;
+    void *init = isp_get_sensor_init();
+    F_FILE *fp;
+    int32_t rc = RET_ERR;
+
+    (void)cmd;
+    if (argc == 1 && argv[0][0] == '?') {
+        atcmd_resp("ready=%u (run one AT+PWCAP cycle first)", init ? 1 : 0);
+        return 0;
+    }
+    if (!init) {
+        atcmd_resp("ERR: no sensor_info snapshot yet - run one AT+PWCAP "
+                   "cycle first, then dump");
+        return -1;
+    }
+    os_memcpy(&gamma_addr, (uint8_t *)init + param_info_off + ptr_off, 4);
+    os_memcpy(&lsc_addr, (uint8_t *)init + param_info_off + ptr_off + 4, 4);
+    if (!gamma_addr || !lsc_addr) {
+        atcmd_resp("ERR: table pointers null (%08x %08x)", gamma_addr,
+                   lsc_addr);
+        return -1;
+    }
+    buf = os_malloc(total);
+    if (!buf) {
+        atcmd_resp("ERR: alloc %u", total);
+        return -1;
+    }
+    os_memset(buf, 0, total);
+    buf[0] = (uint8_t)(ps & 0xFF);
+    buf[1] = (uint8_t)(ps >> 8);   /* ps_lo; ps_hi stays 0 */
+    buf[4] = 1;                    /* sensor_index = 1 */
+    os_memcpy(buf + 6, init, info_sz);
+    buf[6 + 4] = 0x03;             /* ISPCFG_MAGIC at info+4: the loader
+                                     * checks buff[data_offset+2] = slot
+                                     * word 6 = file byte 10..12 - the
+                                     * live struct does not carry it, the
+                                     * v2.7.0.7 tool wrote it into the
+                                     * file (layout finding 2026-10-30) */
+    buf[6 + 5] = 0xB1;
+    os_memcpy(buf + 6 + info_sz, (void *)gamma_addr, gamma_sz);
+    os_memcpy(buf + 6 + info_sz + gamma_sz, (void *)lsc_addr, lsc_sz);
+
+    {
+        extern int vfs_fatfs_register(void);
+        static uint8_t vfs_up;
+
+        if (!vfs_up) {
+            vfs_fatfs_register();   /* teach vfs the "fatfs" type or the
+                                     * mount fails -19 (finding 10-22) */
+            vfs_up = 1;
+        }
+    }
+    /* upload via the wake_capture HTTP worker (bench has no SD card
+     * inserted; the receiver saves the body under the URL's last path
+     * segment) */
+    {
+        extern int32_t wc_http_post_sync(const char *url, const uint8_t *body,
+                                         uint32_t len);
+    extern uint8_t wc_url_query(char *host, uint32_t hsz);
+        char url[96];
+
+        char host[48];
+        uint8_t have = wc_url_query(host, sizeof(host));
+
+        if (!have) {
+            os_strcpy(host, "192.168.31.187");   /* bench default */
+        }
+        os_snprintf(url, sizeof(url), "http://%s:8080/isp_ref.bin", host);
+        rc = wc_http_post_sync(url, buf, total);
+        os_free(buf);
+        atcmd_resp("%s: isp_ref.bin %uB via http (ps=5918 idx=1 "
+                   "gamma@%08x lsc@%08x) - verify: copy to project/"
+                   "txw82xApp/isp.bin, rebuild+burn, expect 'sensor "
+                   "param use flash_param!'",
+                   rc >= 100 ? "OK" : "ERR", total, gamma_addr, lsc_addr);
+        return rc >= 100 ? RET_OK : -1;
+    }
+}
+
 /* ---- init (called from app_lowpwr_camera_init) ---- */
 
 int app_power_test_init(void)
@@ -1185,6 +1289,7 @@ int app_power_test_init(void)
     atcmd_register("AT+PWRHK", pt_atcmd_hk);
     atcmd_register("AT+PWRLOG", pt_atcmd_log);
     atcmd_register("AT+PWDWK", pt_atcmd_wkdet);
+    atcmd_register("AT+PWDUMPISP", pt_atcmd_dumpisp);
     os_printf(KERN_INFO "PT: power test demo ready. AT+PWR? for status, "
 "AT+PWRS=<type 1..5>,<secs> to sleep (synchronous), AT+PWRDT=<secs> "
 "DTIM-timed wake, AT+PWCAP=<mode>,<secs> wake-capture cycle, "

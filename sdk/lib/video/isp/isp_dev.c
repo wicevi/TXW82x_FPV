@@ -443,6 +443,18 @@ _end:
     return (void *)init;
 }
 
+/* Runtime-converted sensor_info snapshot for AT+PWDUMPISP: serializes
+ * the DEFAULT (code-delivered, runtime-converted) table + gamma/lsc
+ * into the flash-param file format - a guaranteed-loadable reference
+ * for the imaging team (the v2.7.0.7-exported file kills the pipeline
+ * once it passes the size check, board findings 2026-10-29/30). */
+static struct hgisp_sensor_init *isp_dump_init;
+
+struct hgisp_sensor_init *isp_get_sensor_init(void)
+{
+    return isp_dump_init;
+}
+
 void isp_cfg_dev(){
 	uint8_t  ret;
     uint8_t  last_sensor_type = 0;
@@ -469,6 +481,7 @@ void isp_cfg_dev(){
 
         os_event_init((void *)&isp_event);
         os_msgq_init((void *)&isp_msg, 2);
+        isp_dump_init = sensor_init;   /* snapshot for AT+PWDUMPISP */
 
         ret = isp_open(isp_dev, ISP_HARDWARE_CLK, ISP_INPUT_FIFO_FULL);
         if (!ret)
@@ -503,6 +516,12 @@ void isp_cfg_dev(){
                     }
                     isp_param_to_sensor_info(sensor_init, isp_iq_param, info->sensor_type);
                     isp_sensor_basic_init(sensor_init,p_sensor_cmd,info->sensor_type,info->sensor_src,info->mode_index);
+                    /* snapshot AFTER basic init: the AT+PWDUMPISP
+                     * serializer needs row_time_us/sizes filled (the
+                     * pre-init zeros made the round-trip file fail the
+                     * libisp "[Sensor Timing] invalid params" check -
+                     * row_time==0, disassembly finding 2026-10-30) */
+                    isp_dump_init = sensor_init;
                 }
 
                 ret = isp_sensor_init(isp_dev, info->sensor_type,(uint32)p_sensor_cmd,info->mode_index);

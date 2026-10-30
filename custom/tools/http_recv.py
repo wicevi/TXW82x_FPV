@@ -27,9 +27,25 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def do_POST(self):
+        import re as _re
         n = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(n) if n else b""
-        name = datetime.datetime.now().strftime("WC_%H%M%S_%f") + ".jpg"
+        # firmware sends the photo label as the last path segment
+        # (.../upload/WK_T3_001) - save under that name so the skip
+        # count is visible in the filename; timestamp fallback otherwise
+        seg = self.path.rstrip("/").rsplit("/", 1)[-1]
+        base = _re.sub(r"[^A-Za-z0-9_.-]", "", seg)[:40] or None
+        name = None
+        if base:
+            stem, dot, ext = base.partition(".")
+            i = 1
+            cand = "%s.jpg" % stem
+            while os.path.exists(os.path.join(RECV_DIR, cand)):
+                i += 1
+                cand = "%s_%d.jpg" % (stem, i)
+            name = cand
+        if not name:
+            name = datetime.datetime.now().strftime("WC_%H%M%S_%f") + ".jpg"
         os.makedirs(RECV_DIR, exist_ok=True)
         path = os.path.join(RECV_DIR, name)
         with open(path, "wb") as f:

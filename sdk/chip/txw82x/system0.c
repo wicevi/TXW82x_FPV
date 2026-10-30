@@ -59,7 +59,16 @@ const uint16_t __used iocfg_psram[IOCFG_SIZE / 2] = {IOCFG_SIZE};
 
 #define PARAM_HEAD(size,head)  (SYS_FACTORY_PARAM_SIZE|head<<16)
 
-__initconst const uint16_t __used isp_param[4096 / 2] = {4096, 0};
+/* ISP IQ payload slot: enlarged 4K->8K because the imaging team's
+ * tuned GC20C3 isp.bin is 5666 bytes - the SDK default slot truncated
+ * it ("tx payload isp.bin truncated from 5666 to 4094", 2026-10-29),
+ * which would deliver an incomplete parameter set (LSC/gamma tail cut).
+ * aligned(4): BinScript aligns the packed payload to 4 bytes - without
+ * this the array landed 2-mod-4 and the runtime read the whole table
+ * skewed by 2 bytes (sensor_index read as 0, tuned params ignored,
+ * board finding 2026-10-29). */
+__initconst const uint16_t __used __attribute__((aligned(4)))
+isp_param[8192 / 2] = {8192, 0};
 __initconst const uint16_t __used eq_param[1024 / 2] = {1024};
 __initconst const uint16_t __used psram_param[4096 / 2] = {4096, 0};
 
